@@ -7,11 +7,11 @@ export class SQSGateway {
   });
 
   async publishMessage(message: Record<string, unknown>): Promise<void> {
-    const sendMessageCommand = new SendMessageCommand({
+    const command = new SendMessageCommand({
       QueueUrl: env.AWS_PROCESS_PAYMENT_QUEUE_URL,
       MessageBody: JSON.stringify(message),
     });
 
-    await this.client.send(sendMessageCommand);
+    await this.client.send(command);
   }
 }
