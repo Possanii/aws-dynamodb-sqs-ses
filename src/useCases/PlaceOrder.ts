@@ -2,14 +2,15 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { randomUUID } from "node:crypto";
 import { env } from "../config/env";
+import { Order } from "../entities/order";
 
 export class PlaceOrder {
   async execute() {
     const customerEmail = env.AWS_CUSTOMER_RECIPIENT_EMAIL;
     const amount = Math.ceil(Math.random() * 1000);
-    const orderId = randomUUID();
+
+    const order = new Order(customerEmail, amount);
 
     // save the order to the database
     const ddbClient = DynamoDBDocumentClient.from(
@@ -20,11 +21,7 @@ export class PlaceOrder {
 
     const putItemCommand = new PutCommand({
       TableName: "Orders",
-      Item: {
-        id: orderId,
-        email: customerEmail,
-        amount,
-      },
+      Item: order,
     });
 
     await ddbClient.send(putItemCommand);
@@ -37,7 +34,7 @@ export class PlaceOrder {
     const sendMessageCommand = new SendMessageCommand({
       QueueUrl: env.AWS_PROCESS_PAYMENT_QUEUE_URL,
       MessageBody: JSON.stringify({
-        orderId,
+        orderId: order.id,
       }),
     });
 
@@ -56,15 +53,15 @@ export class PlaceOrder {
       Message: {
         Subject: {
           Charset: "UTF-8",
-          Data: `Order ${orderId} has been placed successfully!`,
+          Data: `Order ${order.id} has been placed successfully!`,
         },
         Body: {
           Html: {
             Charset: "UTF-8",
             Data: `
-            <h1>Hello, Gustavo!</h1>
+            <h1><strong>Hello, Gustavo!</strong></h1>
 
-            <p>Your order with ID ${orderId} has been placed successfully! As soon as possible, we going to send you more information.</p>
+            <p>Your order with ID ${order.id} has been placed successfully! As soon as possible, we going to send you more information.</p>
 
             <smal>{{ table containing the order items }}</small>
             `,
@@ -75,6 +72,6 @@ export class PlaceOrder {
 
     await sesClient.send(sendEmailCommand);
 
-    return { orderId };
+    return { orderId: order.id };
   }
 }
