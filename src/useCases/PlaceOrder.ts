@@ -1,8 +1,8 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
-import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { env } from "../config/env";
 import { Order } from "../entities/order";
 import { DynamoOrdersRepository } from "../repository/DynamoOrdersRepository";
+import { SQSGateway } from "../gateways/SQSGateway";
 
 export class PlaceOrder {
   async execute() {
@@ -14,19 +14,11 @@ export class PlaceOrder {
 
     await dynamoOrdersRepository.create(order);
 
-    // Pubish a message to the SQS queue to process the payment
-    const sqsClient = new SQSClient({
-      region: env.AWS_REGION,
-    });
+    const sqsGateway = new SQSGateway();
 
-    const sendMessageCommand = new SendMessageCommand({
-      QueueUrl: env.AWS_PROCESS_PAYMENT_QUEUE_URL,
-      MessageBody: JSON.stringify({
-        orderId: order.id,
-      }),
+    await sqsGateway.publishMessage({
+      orderId: order.id,
     });
-
-    await sqsClient.send(sendMessageCommand);
 
     // Send an confirmation e-mail to the customer
     const sesClient = new SESClient({
