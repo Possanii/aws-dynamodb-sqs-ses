@@ -1,9 +1,8 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { env } from "../config/env";
 import { Order } from "../entities/order";
+import { DynamoOrdersRepository } from "../repository/DynamoOrdersRepository";
 
 export class PlaceOrder {
   async execute() {
@@ -11,20 +10,9 @@ export class PlaceOrder {
     const amount = Math.ceil(Math.random() * 1000);
 
     const order = new Order(customerEmail, amount);
+    const dynamoOrdersRepository = new DynamoOrdersRepository();
 
-    // save the order to the database
-    const ddbClient = DynamoDBDocumentClient.from(
-      new DynamoDBClient({
-        region: env.AWS_REGION,
-      })
-    );
-
-    const putItemCommand = new PutCommand({
-      TableName: "Orders",
-      Item: order,
-    });
-
-    await ddbClient.send(putItemCommand);
+    await dynamoOrdersRepository.create(order);
 
     // Pubish a message to the SQS queue to process the payment
     const sqsClient = new SQSClient({
