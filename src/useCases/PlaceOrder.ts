@@ -1,8 +1,8 @@
-import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
 import { env } from "../config/env";
 import { Order } from "../entities/order";
 import { DynamoOrdersRepository } from "../repository/DynamoOrdersRepository";
 import { SQSGateway } from "../gateways/SQSGateway";
+import { SESGateway } from "../gateways/SESGateway";
 
 export class PlaceOrder {
   async execute() {
@@ -20,37 +20,17 @@ export class PlaceOrder {
       orderId: order.id,
     });
 
-    // Send an confirmation e-mail to the customer
-    const sesClient = new SESClient({
-      region: env.AWS_REGION,
-    });
+    const sesGateway = new SESGateway();
 
-    const sendEmailCommand = new SendEmailCommand({
-      Source: env.AWS_SOURCE_SENDER_EMAIL,
-      Destination: {
-        ToAddresses: [customerEmail],
-      },
-      Message: {
-        Subject: {
-          Charset: "UTF-8",
-          Data: `Order ${order.id} has been placed successfully!`,
-        },
-        Body: {
-          Html: {
-            Charset: "UTF-8",
-            Data: `
-            <h1><strong>Hello, Gustavo!</strong></h1>
-
+    await sesGateway.sendEmail({
+      from: env.AWS_SOURCE_SENDER_EMAIL,
+      to: [env.AWS_CUSTOMER_RECIPIENT_EMAIL],
+      subject: `Order ${order.id} has been placed successfully!`,
+      html: `<h1><strong>Hello, Gustavo!</strong></h1> 
             <p>Your order with ID ${order.id} has been placed successfully! As soon as possible, we going to send you more information.</p>
-
             <smal>{{ table containing the order items }}</small>
-            `,
-          },
-        },
-      },
+      `,
     });
-
-    await sesClient.send(sendEmailCommand);
 
     return { orderId: order.id };
   }
