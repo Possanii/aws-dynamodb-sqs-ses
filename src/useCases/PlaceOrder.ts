@@ -5,24 +5,25 @@ import { SQSGateway } from "../gateways/SQSGateway";
 import { SESGateway } from "../gateways/SESGateway";
 
 export class PlaceOrder {
+  constructor(
+    private readonly dynamoOrdersRepository: DynamoOrdersRepository,
+    private readonly sqsGateway: SQSGateway,
+    private readonly sesGateway: SESGateway
+  ) {}
+
   async execute() {
     const customerEmail = env.AWS_CUSTOMER_RECIPIENT_EMAIL;
     const amount = Math.ceil(Math.random() * 1000);
 
     const order = new Order(customerEmail, amount);
-    const dynamoOrdersRepository = new DynamoOrdersRepository();
 
-    await dynamoOrdersRepository.create(order);
+    await this.dynamoOrdersRepository.create(order);
 
-    const sqsGateway = new SQSGateway();
-
-    await sqsGateway.publishMessage({
+    await this.sqsGateway.publishMessage({
       orderId: order.id,
     });
 
-    const sesGateway = new SESGateway();
-
-    await sesGateway.sendEmail({
+    await this.sesGateway.sendEmail({
       from: env.AWS_SOURCE_SENDER_EMAIL,
       to: [env.AWS_CUSTOMER_RECIPIENT_EMAIL],
       subject: `Order ${order.id} has been placed successfully!`,
