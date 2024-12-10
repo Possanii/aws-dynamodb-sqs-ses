@@ -1,12 +1,15 @@
 import { env } from "../config/env";
 import { Order } from "../entities/order";
-import { DynamoOrdersRepository } from "../repository/DynamoOrdersRepository";
 import { SQSGateway } from "../gateways/SQSGateway";
 import { SESGateway } from "../gateways/SESGateway";
 
+export interface IOrdersRepository {
+  create(order: Order): Promise<void>;
+}
+
 export class PlaceOrder {
   constructor(
-    private readonly dynamoOrdersRepository: DynamoOrdersRepository,
+    private readonly ordersRepository: IOrdersRepository,
     private readonly sqsGateway: SQSGateway,
     private readonly sesGateway: SESGateway
   ) {}
@@ -17,7 +20,7 @@ export class PlaceOrder {
 
     const order = new Order(customerEmail, amount);
 
-    await this.dynamoOrdersRepository.create(order);
+    await this.ordersRepository.create(order);
 
     await this.sqsGateway.publishMessage({
       orderId: order.id,
