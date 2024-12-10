@@ -1,7 +1,7 @@
 import { env } from "../config/env";
 import { Order } from "../entities/order";
-import { SQSGateway } from "../gateways/SQSGateway";
 import { SESGateway } from "../gateways/SESGateway";
+import { IQueueGateway } from "../interfaces/gateways/IQueueGateway";
 
 export interface IOrdersRepository {
   create(order: Order): Promise<void>;
@@ -10,7 +10,7 @@ export interface IOrdersRepository {
 export class PlaceOrder {
   constructor(
     private readonly ordersRepository: IOrdersRepository,
-    private readonly sqsGateway: SQSGateway,
+    private readonly sqsGateway: IQueueGateway,
     private readonly sesGateway: SESGateway
   ) {}
 
@@ -22,7 +22,7 @@ export class PlaceOrder {
 
     await this.ordersRepository.create(order);
 
-    await this.sqsGateway.publishMessage({
+    await this.sqsGateway.publish({
       orderId: order.id,
     });
 
