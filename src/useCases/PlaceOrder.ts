@@ -1,6 +1,6 @@
 import { env } from "../config/env";
 import { Order } from "../entities/order";
-import { SESGateway } from "../gateways/SESGateway";
+import { IEmailGateway } from "../interfaces/gateways/IEmailGateway";
 import { IQueueGateway } from "../interfaces/gateways/IQueueGateway";
 
 export interface IOrdersRepository {
@@ -10,8 +10,8 @@ export interface IOrdersRepository {
 export class PlaceOrder {
   constructor(
     private readonly ordersRepository: IOrdersRepository,
-    private readonly sqsGateway: IQueueGateway,
-    private readonly sesGateway: SESGateway
+    private readonly queueGateway: IQueueGateway,
+    private readonly emailGateway: IEmailGateway
   ) {}
 
   async execute() {
@@ -22,11 +22,11 @@ export class PlaceOrder {
 
     await this.ordersRepository.create(order);
 
-    await this.sqsGateway.publish({
+    await this.queueGateway.publish({
       orderId: order.id,
     });
 
-    await this.sesGateway.sendEmail({
+    await this.emailGateway.sendEmail({
       from: env.AWS_SOURCE_SENDER_EMAIL,
       to: [env.AWS_CUSTOMER_RECIPIENT_EMAIL],
       subject: `Order ${order.id} has been placed successfully!`,
