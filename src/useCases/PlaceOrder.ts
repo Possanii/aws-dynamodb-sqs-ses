@@ -1,4 +1,5 @@
 import { env } from "../config/env";
+import { Inject } from "../di/Inject";
 import { Order } from "../entities/order";
 import { IEmailGateway } from "../interfaces/gateways/IEmailGateway";
 import { IQueueGateway } from "../interfaces/gateways/IQueueGateway";
@@ -7,11 +8,13 @@ export interface IOrdersRepository {
   create(order: Order): Promise<void>;
 }
 
+// @Injectable()
 export class PlaceOrder {
   constructor(
+    @Inject("OrdersRepository")
     private readonly ordersRepository: IOrdersRepository,
-    private readonly queueGateway: IQueueGateway,
-    private readonly emailGateway: IEmailGateway
+    @Inject("QueueGateway") private readonly queueGateway: IQueueGateway,
+    @Inject("EmailGateway") private readonly emailGateway: IEmailGateway
   ) {}
 
   async execute() {

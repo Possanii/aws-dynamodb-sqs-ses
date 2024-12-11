@@ -2,6 +2,7 @@ import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { env } from "../config/env";
 import { IQueueGateway } from "../interfaces/gateways/IQueueGateway";
 
+// @Injectable()
 export class SQSGateway implements IQueueGateway {
   private client = new SQSClient({
     region: env.AWS_REGION,

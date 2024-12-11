@@ -5,6 +5,7 @@ import {
   ISendEmailParams,
 } from "../interfaces/gateways/IEmailGateway";
 
+// @Injectable()
 export class SESGateway implements IEmailGateway {
   async sendEmail({
     from,

@@ -1,11 +1,14 @@
+import "reflect-metadata";
+
 import fastify from "fastify";
 import { env } from "../config/env";
-import { makePlaceOrder } from "../factories/makePlaceOrder";
+import { PlaceOrder } from "../useCases/PlaceOrder";
+import { container } from "../di/container";
 
 const app = fastify();
 
 app.post("/orders", async (request, reply) => {
-  const placeOrder = makePlaceOrder();
+  const placeOrder = container.resolve<PlaceOrder>("PlaceOrder");
 
   const { orderId } = await placeOrder.execute();
 
